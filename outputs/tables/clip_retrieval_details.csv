@@ -1,0 +1,11 @@
+query,top1_match,rank,top1_score
+pair_00_orbit_00,pair_01_orbit_01,2,0.9525
+pair_01_orbit_01,pair_01_orbit_01,1,0.9690
+pair_02_orbit_02,pair_07_orbit_07,2,0.9336
+pair_03_orbit_03,pair_03_orbit_03,1,0.9112
+pair_04_orbit_04,pair_04_orbit_04,1,0.8973
+pair_05_orbit_05,pair_05_orbit_05,1,0.9146
+pair_06_orbit_06,pair_06_orbit_06,1,0.9288
+pair_07_orbit_07,pair_07_orbit_07,1,0.9491
+pair_08_orbit_08,pair_08_orbit_08,1,0.9437
+pair_09_orbit_09,pair_09_orbit_09,1,0.8997

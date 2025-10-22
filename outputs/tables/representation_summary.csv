@@ -1,0 +1,2 @@
+model,cosine_mean,cosine_std,fid,sliced_wasserstein
+CLIP,0.9291,0.0222,0.1372,0.0093

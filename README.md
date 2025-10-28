@@ -81,6 +81,18 @@ python -m src.main --stage representation   # 仅表征层分析
 python -m src.main --stage retrieval        # 仅 CLIP 检索
 ```
 
+### 6. 递归对比任意两个文件夹（多级目录同名图片）
+若你的两组图片位于多级目录下且相对路径一致（例如 `Component_*/view_xx.png`），可以使用：
+
+```powershell
+python -m src.compare_folders `
+	--folder-a "e:\my_dev\nomdl-experiments\origin-figs\multi_views_with_bg_mdl" `
+	--folder-b "e:\my_dev\nomdl-experiments\origin-figs\multi_views_with_bg_nomdl" `
+	--limit-figure 10
+```
+
+详细说明见 `docs/compare_folders.md`。
+
 ---
 
 ## 输出文件速览

@@ -69,3 +69,42 @@ def load_image_pairs(extensions: Iterable[str] = (".png", ".jpg", ".jpeg")) -> L
             stem = f"pair_{idx:02d}_{stem_b}"
         pairs.append(ImagePair(stem=stem, image_a=img_a, image_b=img_b))
     return pairs
+
+
+def load_image_pairs_recursive(
+    folder_a: Path | str,
+    folder_b: Path | str,
+    extensions: Iterable[str] = (".png", ".jpg", ".jpeg"),
+) -> List[ImagePair]:
+    """Match images by relative path under two folder trees.
+
+    Example match: A/root/Component_1/view.png <-> B/root/Component_1/view.png
+    """
+    folder_a = Path(folder_a)
+    folder_b = Path(folder_b)
+
+    if not folder_a.exists() or not folder_b.exists():
+        missing = [str(p) for p in (folder_a, folder_b) if not p.exists()]
+        raise FileNotFoundError(f"Missing directory: {', '.join(missing)}")
+
+    allowed_exts = {ext.lower() for ext in extensions}
+    files_a = [p for p in folder_a.rglob("*") if p.is_file() and p.suffix.lower() in allowed_exts]
+
+    pairs: List[ImagePair] = []
+    missing_count = 0
+    for path_a in sorted(files_a):
+        rel = path_a.relative_to(folder_a)
+        path_b = folder_b / rel
+        if not path_b.exists():
+            missing_count += 1
+            continue
+        img_a = Image.open(path_a).convert("RGB")
+        img_b = Image.open(path_b).convert("RGB")
+        stem = str(rel).replace("\\", "/")
+        pairs.append(ImagePair(stem=stem, image_a=img_a, image_b=img_b))
+
+    if not pairs:
+        raise ValueError("No aligned image pairs found recursively. Check directory structure and extensions.")
+    if missing_count:
+        print(f"[WARN] {missing_count} files in A had no B counterpart (by relative path).")
+    return pairs

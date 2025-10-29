@@ -12,6 +12,8 @@ import torch
 from scipy import linalg
 from sklearn.manifold import TSNE
 from torchvision import transforms
+import timm
+from timm.data import resolve_data_config, create_transform
 
 from . import config
 from .utils import ImagePair, ensure_output_dirs, load_image_pairs
@@ -77,18 +79,43 @@ def _prepare_clip(device: torch.device) -> Tuple[Callable[[torch.Tensor], torch.
 
 
 def _prepare_dino(device: torch.device) -> Tuple[Callable[[torch.Tensor], torch.Tensor], transforms.Compose]:
-    model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
-    model.eval().to(device)
+    """Prepare DINOv2 encoder. Prefer official torch.hub; fallback to timm weights.
+
+    Returns a (forward, preprocess) pair.
+    """
+    # Try official hub first
+    try:
+        model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
+        model.eval().to(device)
+
+        def forward(images: torch.Tensor) -> torch.Tensor:
+            return model(images)
+
+        preprocess = transforms.Compose([
+            transforms.Resize(256, interpolation=transforms.InterpolationMode.BICUBIC),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+        ])
+        return forward, preprocess
+    except Exception as e:
+        print(f"[INFO] 官方 DINOv2 hub 加载失败，尝试使用 timm 预训练权重。原因：{e}")
+
+    # Fallback: timm pre-trained DINOv2 backbone
+    model = timm.create_model(
+        "vit_small_patch14_dinov2",
+        pretrained=True,
+        num_classes=0,            # return features
+        global_pool="token",     # use CLS/token pooling
+    ).to(device)
+    model.eval()
+
+    cfg = resolve_data_config({}, model=model)
+    preprocess = create_transform(**cfg)
 
     def forward(images: torch.Tensor) -> torch.Tensor:
         return model(images)
 
-    preprocess = transforms.Compose([
-        transforms.Resize(256, interpolation=transforms.InterpolationMode.BICUBIC),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-    ])
     return forward, preprocess
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, Optional
 
 import numpy as np
 import open_clip
@@ -147,14 +147,15 @@ def _normalize_features(features: np.ndarray) -> np.ndarray:
     return features / np.clip(norms, a_min=1e-12, a_max=None)
 
 
-def _save_embeddings(name: str, batch: FeatureBatch) -> Path:
+def _save_embeddings(name: str, batch: FeatureBatch, suffix: str = "") -> Path:
     ensure_output_dirs()
-    path = config.EMBEDDINGS_DIR / f"{name}_features.npz"
+    suf = f"_{suffix}" if suffix else ""
+    path = config.EMBEDDINGS_DIR / f"{name}_features{suf}.npz"
     np.savez_compressed(path, stems=batch.stems, feats_a=batch.feats_a, feats_b=batch.feats_b)
     return path
 
 
-def _tsne_plot(clip_batch: FeatureBatch) -> Path:
+def _tsne_plot(clip_batch: FeatureBatch, suffix: str = "") -> Path:
     ensure_output_dirs()
     combined = np.concatenate([clip_batch.feats_a, clip_batch.feats_b], axis=0)
     labels = ["A"] * len(clip_batch.feats_a) + ["B"] * len(clip_batch.feats_b)
@@ -171,22 +172,24 @@ def _tsne_plot(clip_batch: FeatureBatch) -> Path:
     plt.title("CLIP Feature t-SNE")
     plt.tight_layout()
 
-    out_path = config.FIGURES_DIR / "representation_tsne.png"
+    suf = f"_{suffix}" if suffix else ""
+    out_path = config.FIGURES_DIR / f"representation_tsne{suf}.png"
     plt.savefig(out_path, dpi=200)
     plt.close()
     return out_path
 
 
-def run_representation_analysis() -> Dict[str, Path]:
+def run_representation_analysis(pairs: Optional[List[ImagePair]] = None, suffix: str = "") -> Dict[str, Path]:
     ensure_output_dirs()
     _set_seed(config.RANDOM_SEED)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    pairs = load_image_pairs()
+    if pairs is None:
+        pairs = load_image_pairs()
 
     clip_forward, clip_preprocess = _prepare_clip(device)
     clip_batch = _extract_features(clip_forward, clip_preprocess, pairs, device)
-    clip_embeddings_path = _save_embeddings("clip", clip_batch)
+    clip_embeddings_path = _save_embeddings("clip", clip_batch, suffix)
 
     artifacts = {
         "clip_embeddings": clip_embeddings_path,
@@ -196,7 +199,7 @@ def run_representation_analysis() -> Dict[str, Path]:
     try:
         dino_forward, dino_preprocess = _prepare_dino(device)
         dino_batch = _extract_features(dino_forward, dino_preprocess, pairs, device)
-        dino_embeddings_path = _save_embeddings("dinov2", dino_batch)
+        dino_embeddings_path = _save_embeddings("dinov2", dino_batch, suffix)
         artifacts["dinov2_embeddings"] = dino_embeddings_path
     except Exception as exc:  # pragma: no cover - best effort fallback
         print(f"[WARN] DINOv2 加载失败（{exc}），将跳过相关指标。")
@@ -227,7 +230,8 @@ def run_representation_analysis() -> Dict[str, Path]:
             "sliced_wasserstein": float(swd),
         })
 
-    summary_path = config.TABLES_DIR / "representation_summary.csv"
+    suf = f"_{suffix}" if suffix else ""
+    summary_path = config.TABLES_DIR / f"representation_summary{suf}.csv"
     if summary_rows:
         summary_df = pd.DataFrame(summary_rows)
         summary_df.to_csv(summary_path, index=False, float_format="{:.4f}".format)
@@ -235,11 +239,11 @@ def run_representation_analysis() -> Dict[str, Path]:
         summary_path.write_text("model,cosine_mean,cosine_std,fid,sliced_wasserstein\n")
 
     # Save pretty JSON for quick reading
-    json_path = config.TABLES_DIR / "representation_summary.json"
+    json_path = config.TABLES_DIR / f"representation_summary{suf}.json"
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary_rows, f, indent=2)
 
-    tsne_path = _tsne_plot(clip_batch)
+    tsne_path = _tsne_plot(clip_batch, suffix)
 
     artifacts.update({
         "summary_csv": summary_path,

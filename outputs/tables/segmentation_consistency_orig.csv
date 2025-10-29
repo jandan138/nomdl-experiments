@@ -1,0 +1,11 @@
+image,pixel_agreement,miou_proxy
+pair_00_orbit_00,0.9987,0.4993
+pair_01_orbit_01,1.0000,1.0000
+pair_02_orbit_02,0.9933,0.6743
+pair_03_orbit_03,1.0000,0.5000
+pair_04_orbit_04,0.9952,0.3317
+pair_05_orbit_05,1.0000,1.0000
+pair_06_orbit_06,1.0000,1.0000
+pair_07_orbit_07,1.0000,1.0000
+pair_08_orbit_08,1.0000,1.0000
+pair_09_orbit_09,0.9999,0.3333

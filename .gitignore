@@ -5,3 +5,4 @@ __pycache__/
 .DS_Store
 Thumbs.db
 origin-figs/multi_views_with_bg_*/
+*.pt

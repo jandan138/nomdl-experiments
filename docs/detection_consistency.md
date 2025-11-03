@@ -23,6 +23,14 @@ python -m src.detection_consistency `
   --tag multiviews
 ```
 
+  权重路径（规范化）：
+  - 默认优先使用 `src/config.py` 中的 `YOLO_WEIGHTS`（建议将权重放在 `models/yolov8n.pt`）。
+  - 也可通过 `--weights` 显式指定：
+  ```powershell
+  python -m src.detection_consistency --tag orig --weights "e:\my_dev\nomdl-experiments\models\yolov8n.pt"
+  ```
+  若均未提供，则回退为 `yolov8n.pt`（Ultralytics 会尝试自动下载或从当前目录读取）。
+
 输出：
 - `outputs/tables/detection_consistency_{tag}.csv`：逐图指标
 - `outputs/tables/detection_consistency_{tag}_summary.csv`：均值/标准差汇总

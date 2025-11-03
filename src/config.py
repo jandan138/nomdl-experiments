@@ -15,3 +15,7 @@ EMBEDDINGS_DIR = OUTPUT_ROOT / "embeddings"
 
 # Random seeds to keep visualizations stable
 RANDOM_SEED = 42
+
+# Models directory and default weights
+MODELS_DIR = Path("e:/my_dev/nomdl-experiments/models")
+YOLO_WEIGHTS = MODELS_DIR / "yolov8n.pt"

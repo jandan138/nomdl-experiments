@@ -20,10 +20,17 @@ class Det:
     cls: int
 
 
-def _load_yolo(device: torch.device):
+def _load_yolo(device: torch.device, weights: Optional[Path] = None):
     from ultralytics import YOLO
-    # small model for speed; cached weights
-    model = YOLO("yolov8n.pt")
+    # small model for speed; prefer configured weights if provided/exist
+    w = None
+    if weights is not None and Path(weights).exists():
+        w = str(weights)
+    elif config.YOLO_WEIGHTS.exists():
+        w = str(config.YOLO_WEIGHTS)
+    else:
+        w = "yolov8n.pt"  # fallback: allow auto-download or local file in CWD
+    model = YOLO(w)
     model.fuse()
     return model
 
@@ -112,13 +119,13 @@ def _pair_metrics(dets_a: List[Det], dets_b: List[Det]) -> Dict[str, float]:
     }
 
 
-def run_detection_consistency(pairs: Optional[List[ImagePair]] = None, tag: str = "orig") -> Dict[str, Path]:
+def run_detection_consistency(pairs: Optional[List[ImagePair]] = None, tag: str = "orig", weights: Optional[Path] = None) -> Dict[str, Path]:
     ensure_output_dirs()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if pairs is None:
         pairs = load_image_pairs()
 
-    model = _load_yolo(device)
+    model = _load_yolo(device, weights=weights)
 
     rows = []
     for pair in pairs:
@@ -144,13 +151,14 @@ def cli():
     ap.add_argument("--folder-a", type=Path, help="Root folder A (recursive)")
     ap.add_argument("--folder-b", type=Path, help="Root folder B (recursive)")
     ap.add_argument("--tag", type=str, default="orig", help="Suffix tag for outputs")
+    ap.add_argument("--weights", type=Path, default=None, help="Path to YOLO weights (.pt). Defaults to config.YOLO_WEIGHTS if exists.")
     args = ap.parse_args()
 
     if args.folder_a and args.folder_b:
         pairs = load_image_pairs_recursive(args.folder_a, args.folder_b)
     else:
         pairs = None
-    arts = run_detection_consistency(pairs=pairs, tag=args.tag)
+    arts = run_detection_consistency(pairs=pairs, tag=args.tag, weights=args.weights)
     for k, v in arts.items():
         print(f"{k}: {v}")
 

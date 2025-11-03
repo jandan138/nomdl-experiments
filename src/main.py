@@ -3,9 +3,9 @@ from __future__ import annotations
 import argparse
 from typing import Callable, Dict
 
-from .image_quality import run_image_quality_pipeline
-from .representation_analysis import run_representation_analysis
-from .clip_retrieval import run_clip_retrieval
+from src.quality.image_quality import run_image_quality_pipeline
+from src.representation.representation_analysis import run_representation_analysis
+from src.representation.clip_retrieval import run_clip_retrieval
 
 
 def _run_and_report(name: str, func: Callable[[], Dict[str, object]]) -> None:

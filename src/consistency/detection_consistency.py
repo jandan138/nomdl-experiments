@@ -9,8 +9,8 @@ import numpy as np
 import pandas as pd
 import torch
 
-from . import config
-from .utils import ImagePair, ensure_output_dirs, load_image_pairs, load_image_pairs_recursive
+from src.core import config
+from src.core.utils import ImagePair, ensure_output_dirs, load_image_pairs, load_image_pairs_recursive
 
 
 @dataclass
@@ -22,21 +22,19 @@ class Det:
 
 def _load_yolo(device: torch.device, weights: Optional[Path] = None):
     from ultralytics import YOLO
-    # small model for speed; prefer configured weights if provided/exist
     w = None
     if weights is not None and Path(weights).exists():
         w = str(weights)
     elif config.YOLO_WEIGHTS.exists():
         w = str(config.YOLO_WEIGHTS)
     else:
-        w = "yolov8n.pt"  # fallback: allow auto-download or local file in CWD
+        w = "yolov8n.pt"
     model = YOLO(w)
     model.fuse()
     return model
 
 
 def _predict(model, image) -> List[Det]:
-    # model expects numpy array or path; we have PIL
     results = model.predict(image, verbose=False)
     dets: List[Det] = []
     for r in results:
@@ -55,13 +53,10 @@ def _iou_matrix(a: List[Det], b: List[Det]) -> np.ndarray:
         return np.zeros((len(a), len(b)), dtype=np.float32)
     A = np.stack([d.xyxy for d in a])
     B = np.stack([d.xyxy for d in b])
-    # IoU between all boxes
-    # intersection
     tl = np.maximum(A[:, None, :2], B[None, :, :2])
     br = np.minimum(A[:, None, 2:], B[None, :, 2:])
     wh = np.clip(br - tl, a_min=0, a_max=None)
     inter = wh[:, :, 0] * wh[:, :, 1]
-    # areas
     area_a = (A[:, 2] - A[:, 0]) * (A[:, 3] - A[:, 1])
     area_b = (B[:, 2] - B[:, 0]) * (B[:, 3] - B[:, 1])
     union = area_a[:, None] + area_b[None, :] - inter
@@ -73,7 +68,6 @@ def _greedy_match(a: List[Det], b: List[Det], iou_thr: float = 0.5, same_class: 
     if not a or not b:
         return [], list(range(len(a))), list(range(len(b)))
     iou = _iou_matrix(a, b)
-    # mask by class if required
     if same_class:
         cls_a = np.array([d.cls for d in a])[:, None]
         cls_b = np.array([d.cls for d in b])[None, :]

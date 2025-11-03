@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from pathlib import Path
 from typing import Dict, List
 
@@ -8,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from . import config
+from src.core import config
 
 
 def _load_embeddings(path: Path):
@@ -20,18 +19,12 @@ def _load_embeddings(path: Path):
 
 
 def _cosines_from_feats(feats_a: np.ndarray, feats_b: np.ndarray) -> np.ndarray:
-    # normalize rows
     a = feats_a / np.linalg.norm(feats_a, axis=1, keepdims=True)
     b = feats_b / np.linalg.norm(feats_b, axis=1, keepdims=True)
     return np.sum(a * b, axis=1)
 
 
 def violin_cosine_plot(emb_paths: Dict[str, Path], out_path: Path) -> Path:
-    """Draw violin plots comparing per-pair cosine distributions for multiple models/datasets.
-
-    emb_paths: mapping label -> npz path (expects feats_a, feats_b)
-    """
-    # Use a matplotlib builtin style to avoid extra dependencies
     plt.style.use("ggplot")
     fig, axes = plt.subplots(1, 1, figsize=(8, 5))
 
@@ -45,7 +38,6 @@ def violin_cosine_plot(emb_paths: Dict[str, Path], out_path: Path) -> Path:
         labels.append(label)
         data.append(cos)
 
-    # create violin plot
     parts = axes.violinplot(data, showmeans=False, showmedians=True)
     for pc in parts["bodies"]:
         pc.set_facecolor("#1f77b4")
@@ -65,12 +57,7 @@ def violin_cosine_plot(emb_paths: Dict[str, Path], out_path: Path) -> Path:
 
 
 def bar_metrics_plot(summary_paths: Dict[str, Path], out_path: Path) -> Path:
-    """Draw grouped bar chart for metrics (cosine_mean, fid, sliced_wasserstein).
-
-    summary_paths: mapping dataset_label -> summary csv path (summary contains rows per model)
-    """
     metrics = ["cosine_mean", "fid", "sliced_wasserstein"]
-    # read all summaries into a dict: dataset -> DataFrame indexed by model
     summaries: Dict[str, pd.DataFrame] = {}
     for ds_label, p in summary_paths.items():
         if not p.exists():
@@ -86,8 +73,7 @@ def bar_metrics_plot(summary_paths: Dict[str, Path], out_path: Path) -> Path:
     datasets = sorted(summaries.keys())
 
     n_metrics = len(metrics)
-    n_models = len(models)
-    x = np.arange(n_models)
+    x = np.arange(len(models))
     width = 0.7 / max(1, len(datasets))
 
     plt.style.use("ggplot")
@@ -122,7 +108,6 @@ def main() -> Dict[str, Path]:
     for d in ensure_dirs:
         d.mkdir(parents=True, exist_ok=True)
 
-    # candidates for embeddings/summaries (original and multiviews)
     emb_candidates = {
         "CLIP": config.EMBEDDINGS_DIR / "clip_features.npz",
         "DINOv2": config.EMBEDDINGS_DIR / "dinov2_features.npz",

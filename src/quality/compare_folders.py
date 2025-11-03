@@ -4,9 +4,9 @@ import argparse
 from pathlib import Path
 from typing import Dict
 
-from . import config
-from .image_quality import compute_metrics, create_side_by_side_grid, save_metrics_table, save_summary_table
-from .utils import ensure_output_dirs, load_image_pairs_recursive
+from src.core import config
+from src.core.utils import ensure_output_dirs, load_image_pairs_recursive
+from src.quality.image_quality import compute_metrics, create_side_by_side_grid, save_metrics_table, save_summary_table
 
 
 def run_compare_folders(folder_a: Path, folder_b: Path, limit_figure: int | None = 10) -> Dict[str, Path]:
@@ -27,6 +27,9 @@ def run_compare_folders(folder_a: Path, folder_b: Path, limit_figure: int | None
         "summary": summary_path,
         "figure": figure_path,
     }
+
+
+essentials = run_compare_folders
 
 
 def main() -> None:

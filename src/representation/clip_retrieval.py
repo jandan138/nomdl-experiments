@@ -9,8 +9,8 @@ import pandas as pd
 import torch
 from torchvision import transforms
 
-from . import config
-from .utils import ImagePair, ensure_output_dirs, load_image_pairs
+from src.core import config
+from src.core.utils import ImagePair, ensure_output_dirs, load_image_pairs
 
 
 def _prepare_clip(device: torch.device):

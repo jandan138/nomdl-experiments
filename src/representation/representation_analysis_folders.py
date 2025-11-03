@@ -4,8 +4,8 @@ import argparse
 from pathlib import Path
 from typing import Dict
 
-from .utils import ensure_output_dirs, load_image_pairs_recursive
-from .representation_analysis import run_representation_analysis
+from src.core.utils import ensure_output_dirs, load_image_pairs_recursive
+from src.representation.representation_analysis import run_representation_analysis
 
 
 def main() -> None:

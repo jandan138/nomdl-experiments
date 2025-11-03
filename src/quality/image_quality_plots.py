@@ -1,5 +1,4 @@
 import os
-import math
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -13,7 +12,6 @@ os.makedirs(FIG_DIR, exist_ok=True)
 
 def _load_summary(path: str) -> tuple[pd.Series, pd.Series]:
     df = pd.read_csv(path, index_col=0)
-    # coerce to numeric, preserving inf/nan
     df = df.apply(pd.to_numeric, errors='coerce')
     mean = df.loc['mean'] if 'mean' in df.index else df.mean(numeric_only=True)
     std = df.loc['std'] if 'std' in df.index else df.std(numeric_only=True)
@@ -33,7 +31,6 @@ def plot_image_quality_summary():
 
     fig, axes = plt.subplots(1, 3, figsize=(12, 3.8))
 
-    # SSIM subplot (higher is better)
     ax = axes[0]
     ax.bar([0], [ssim_m], yerr=None if np.isnan(ssim_s) else [ssim_s], color='#4C78A8', width=0.6)
     ax.set_xticks([0]); ax.set_xticklabels(['SSIM'])
@@ -41,7 +38,6 @@ def plot_image_quality_summary():
     ax.set_title('SSIM (↑)')
     ax.text(0, min(0.98, ssim_m + 0.05), f"{ssim_m:.3f}" + (f" ± {ssim_s:.3f}" if not np.isnan(ssim_s) else ''), ha='center', va='bottom', fontsize=9)
 
-    # LPIPS subplot (lower is better)
     ax = axes[1]
     ax.bar([0], [lpips_m], yerr=None if np.isnan(lpips_s) else [lpips_s], color='#F58518', width=0.6)
     ax.set_xticks([0]); ax.set_xticklabels(['LPIPS'])
@@ -49,10 +45,8 @@ def plot_image_quality_summary():
     ax.set_title('LPIPS (↓)')
     ax.text(0, min(0.98, lpips_m + 0.05), f"{lpips_m:.3f}" + (f" ± {lpips_s:.3f}" if not np.isnan(lpips_s) else ''), ha='center', va='bottom', fontsize=9)
 
-    # PSNR subplot (dB). If infinite or nan, show annotation panel
     ax = axes[2]
     if np.isfinite(psnr_m):
-        # choose a reasonable upper bound for visual; clip if needed
         ylim = (0, 60)
         ax.bar([0], [min(psnr_m, ylim[1])], yerr=None if np.isnan(psnr_s) else [psnr_s], color='#54A24B', width=0.6)
         ax.set_ylim(*ylim)
@@ -61,7 +55,6 @@ def plot_image_quality_summary():
         ax.set_xticks([0]); ax.set_xticklabels(['PSNR'])
         ax.set_title('PSNR (dB, ↑)')
     else:
-        # Hide axes and show explanatory text (English to avoid font issues)
         ax.axis('off')
         text = 'PSNR: ∞ dB\n(MSE ≈ 0; images nearly/fully identical)'
         ax.text(0.5, 0.5, text, ha='center', va='center', fontsize=11, bbox=dict(boxstyle='round', facecolor='#e6f4ea', edgecolor='#54A24B'))

@@ -9,8 +9,8 @@ import pandas as pd
 import torch
 from torchvision import models
 
-from . import config
-from .utils import ImagePair, ensure_output_dirs, load_image_pairs, load_image_pairs_recursive
+from src.core import config
+from src.core.utils import ImagePair, ensure_output_dirs, load_image_pairs, load_image_pairs_recursive
 
 
 def _prepare_deeplab(device: torch.device):
@@ -30,7 +30,6 @@ def _predict_mask(model, preprocess, image, device: torch.device) -> np.ndarray:
 
 
 def _mean_iou_from_masks(a: np.ndarray, b: np.ndarray, ignore_index: int = 255) -> float:
-    # compute mIoU over union of present classes, excluding ignore index
     classes = np.unique(np.concatenate([a.flatten(), b.flatten()]))
     classes = classes[classes != ignore_index]
     ious = []

@@ -15,8 +15,8 @@ from torchvision import transforms
 import timm
 from timm.data import resolve_data_config, create_transform
 
-from . import config
-from .utils import ImagePair, ensure_output_dirs, load_image_pairs
+from src.core import config
+from src.core.utils import ImagePair, ensure_output_dirs, load_image_pairs
 
 
 def _set_seed(seed: int) -> None:
@@ -83,7 +83,6 @@ def _prepare_dino(device: torch.device) -> Tuple[Callable[[torch.Tensor], torch.
 
     Returns a (forward, preprocess) pair.
     """
-    # Try official hub first
     try:
         model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
         model.eval().to(device)
@@ -101,12 +100,11 @@ def _prepare_dino(device: torch.device) -> Tuple[Callable[[torch.Tensor], torch.
     except Exception as e:
         print(f"[INFO] 官方 DINOv2 hub 加载失败，尝试使用 timm 预训练权重。原因：{e}")
 
-    # Fallback: timm pre-trained DINOv2 backbone
     model = timm.create_model(
         "vit_small_patch14_dinov2",
         pretrained=True,
-        num_classes=0,            # return features
-        global_pool="token",     # use CLS/token pooling
+        num_classes=0,
+        global_pool="token",
     ).to(device)
     model.eval()
 
@@ -201,10 +199,9 @@ def run_representation_analysis(pairs: Optional[List[ImagePair]] = None, suffix:
         dino_batch = _extract_features(dino_forward, dino_preprocess, pairs, device)
         dino_embeddings_path = _save_embeddings("dinov2", dino_batch, suffix)
         artifacts["dinov2_embeddings"] = dino_embeddings_path
-    except Exception as exc:  # pragma: no cover - best effort fallback
+    except Exception as exc:
         print(f"[WARN] DINOv2 加载失败（{exc}），将跳过相关指标。")
 
-    # Metric computations
     summary_rows = []
 
     for name, batch in (("CLIP", clip_batch), ("DINOv2", dino_batch)):
@@ -238,7 +235,6 @@ def run_representation_analysis(pairs: Optional[List[ImagePair]] = None, suffix:
     else:
         summary_path.write_text("model,cosine_mean,cosine_std,fid,sliced_wasserstein\n")
 
-    # Save pretty JSON for quick reading
     json_path = config.TABLES_DIR / f"representation_summary{suf}.json"
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary_rows, f, indent=2)

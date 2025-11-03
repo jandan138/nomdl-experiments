@@ -12,8 +12,8 @@ import pandas as pd
 import torch
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
-from . import config
-from .utils import ImagePair, ensure_output_dirs, load_image_pairs
+from src.core import config
+from src.core.utils import ImagePair, ensure_output_dirs, load_image_pairs
 
 
 def _to_numpy(img) -> np.ndarray:

@@ -16,13 +16,23 @@
 ├─ origin-figs/               # 原始配对图像（A 组 vs B 组）
 │   ├─ mdl_images/            # A 组：原材质图片
 │   └─ nomdl_images/          # B 组：简化材质图片
-├─ src/                       # 核心脚本
-│   ├─ config.py              # 全局路径、随机种子配置
-│   ├─ utils.py               # 加载图片对、输出目录工具
-│   ├─ image_quality.py       # 图像质量实验
-│   ├─ representation_analysis.py # 表征层分析
-│   ├─ clip_retrieval.py      # CLIP 检索实验
-│   └─ main.py                # 命令行入口，串联全部实验
+├─ src/                       # 核心脚本（已模块化分层）
+│   ├─ core/                  # 基础设施（配置、工具）
+│   │   ├─ config.py          # 全局路径、模型权重、随机种子
+│   │   └─ utils.py           # 加载图片对、输出目录工具
+│   ├─ quality/               # 图像质量
+│   │   ├─ image_quality.py   # 质量指标与拼图
+│   │   └─ image_quality_plots.py
+│   ├─ representation/        # 表征分析与检索
+│   │   ├─ representation_analysis.py
+│   │   ├─ representation_analysis_folders.py
+│   │   ├─ representation_plots.py
+│   │   └─ clip_retrieval.py
+│   ├─ consistency/           # 一致性代理（检测/分割/可视化）
+│   │   ├─ detection_consistency.py
+│   │   ├─ segmentation_consistency.py
+│   │   └─ plots.py           # 检测/分割一致性可视化
+│   └─ main.py                # 命令行入口（串联阶段）
 ├─ docs/                      # 新手友好操作指南
 │   └─ ...                    # 每个脚本对应一份说明
 ├─ outputs/                   # 实验结果（脚本运行后自动生成）
@@ -85,7 +95,7 @@ python -m src.main --stage retrieval        # 仅 CLIP 检索
 若你的两组图片位于多级目录下且相对路径一致（例如 `Component_*/view_xx.png`），可以使用：
 
 ```powershell
-python -m src.compare_folders `
+python -m src.quality.compare_folders `
 	--folder-a "e:\my_dev\nomdl-experiments\origin-figs\multi_views_with_bg_mdl" `
 	--folder-b "e:\my_dev\nomdl-experiments\origin-figs\multi_views_with_bg_nomdl" `
 	--limit-figure 10
@@ -100,6 +110,16 @@ python -m src.compare_folders `
 - 关键图像：`outputs/figures/image_quality_side_by_side.png`、`outputs/figures/representation_tsne.png`。
 - 特征缓存：`outputs/embeddings/*.npz`，可复用或做更多分析。
 
+### 一致性可视化
+
+- 生成检测/分割一致性图：
+
+```powershell
+python -m src.consistency.plots
+```
+
+输出到：`outputs/figures/consistency_*.png`
+
 ---
 
 ## 常见问题
@@ -112,7 +132,7 @@ python -m src.compare_folders `
 
 ## 贡献指南
 1. Fork & Pull Request：欢迎在本仓库基础上扩展模型或新增指标。
-2. 提交前：请运行 `python -m src.main` 确认关键脚本通过。
+2. 提交前：请运行 `python -m src.main` 确认关键脚本通过；若只需某个阶段，可按章节中的单独命令运行。
 3. 代码风格：保持 `src/` 中已有的结构与注释风格，必要时更新 `docs/` 对应指导文档。
 
 如有问题欢迎提交 Issue！

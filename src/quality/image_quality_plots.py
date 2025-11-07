@@ -20,7 +20,19 @@ def _load_summary(path: str) -> tuple[pd.Series, pd.Series]:
 
 def plot_image_quality_summary():
     path = os.path.join(TABLES_DIR, 'image_quality_summary.csv')
+    meta_path = os.path.join(TABLES_DIR, 'image_quality_summary_meta.csv')
     mean, std = _load_summary(path)
+
+    inf_count = None
+    replacement = None
+    if os.path.exists(meta_path):
+        try:
+            meta = pd.read_csv(meta_path)
+            inf_count = int(meta.get('psnr_inf_count', pd.Series([np.nan])).iloc[0])
+            replacement = float(meta.get('psnr_inf_replacement', pd.Series([np.nan])).iloc[0])
+        except Exception:
+            inf_count = None
+            replacement = None
 
     psnr_m = float(mean.get('psnr', np.nan))
     psnr_s = float(std.get('psnr', np.nan))
@@ -46,17 +58,26 @@ def plot_image_quality_summary():
     ax.text(0, min(0.98, lpips_m + 0.05), f"{lpips_m:.3f}" + (f" ± {lpips_s:.3f}" if not np.isnan(lpips_s) else ''), ha='center', va='bottom', fontsize=9)
 
     ax = axes[2]
+    ylim = (0, 60)
     if np.isfinite(psnr_m):
-        ylim = (0, 60)
         ax.bar([0], [min(psnr_m, ylim[1])], yerr=None if np.isnan(psnr_s) else [psnr_s], color='#54A24B', width=0.6)
         ax.set_ylim(*ylim)
-        label = f"{psnr_m:.1f} dB" + (f" ± {psnr_s:.1f}" if not np.isnan(psnr_s) else '')
-        ax.text(0, min(ylim[1]-3, (min(psnr_m, ylim[1]) + 3)), label, ha='center', va='bottom', fontsize=9)
+        base_label = f"{psnr_m:.1f} dB" + (f" ± {psnr_s:.1f}" if not np.isnan(psnr_s) else '')
+        extra = ''
+        if inf_count is not None and inf_count > 0:
+            # Show how many perfect matches and what replacement was used
+            if replacement is not None and np.isfinite(replacement):
+                extra = f"\n(perfect={inf_count}, repl≈{replacement:.1f}dB)"
+            else:
+                extra = f"\n(perfect={inf_count})"
+        ax.text(0, min(ylim[1]-3, (min(psnr_m, ylim[1]) + 3)), base_label + extra, ha='center', va='bottom', fontsize=9)
         ax.set_xticks([0]); ax.set_xticklabels(['PSNR'])
         ax.set_title('PSNR (dB, ↑)')
     else:
         ax.axis('off')
         text = 'PSNR: ∞ dB\n(MSE ≈ 0; images nearly/fully identical)'
+        if inf_count is not None:
+            text += f"\n(perfect={inf_count})"
         ax.text(0.5, 0.5, text, ha='center', va='center', fontsize=11, bbox=dict(boxstyle='round', facecolor='#e6f4ea', edgecolor='#54A24B'))
         ax.set_title('PSNR (dB, ↑)')
 

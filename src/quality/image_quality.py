@@ -63,10 +63,25 @@ def save_metrics_table(metrics: pd.DataFrame) -> Path:
 
 
 def save_summary_table(metrics: pd.DataFrame) -> Path:
-    summary = metrics.agg(["mean", "std"])
-    formatted = summary.applymap(lambda x: f"{x:.4f}")
+    # Compute robust summary: ignore inf/nan for aggregation
+    numeric = metrics.apply(pd.to_numeric, errors="coerce")
+    inf_count = int(np.isinf(numeric.get("psnr", pd.Series(dtype=float))).sum())
+    total = int(len(numeric))
+
+    agg_df = numeric.replace([np.inf, -np.inf], np.nan).agg(["mean", "std"])  # skipna=True by default
+
+    # Persist main summary (rounded)
     summary_path = config.TABLES_DIR / "image_quality_summary.csv"
-    formatted.to_csv(summary_path)
+    agg_df.round(4).to_csv(summary_path)
+
+    # Persist side meta to keep information about perfect matches that yielded inf PSNR
+    meta = pd.DataFrame({
+        "psnr_inf_count": [inf_count],
+        "n_pairs": [total],
+    })
+    meta_path = config.TABLES_DIR / "image_quality_summary_meta.csv"
+    meta.to_csv(meta_path, index=False)
+
     return summary_path
 
 
